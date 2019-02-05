@@ -65,7 +65,7 @@ This library is a work in progress and not yet stable. Use at your own risk. New
 
 ### Read Smart Lock config
 ```typescript
-    smartlock.readConfig(path?: string): Promise<void>);
+    smartlock.readConfig(path?: string): Promise<void>;
 ```
 
 ### Save Smart Lock config
