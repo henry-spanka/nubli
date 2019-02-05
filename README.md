@@ -2,7 +2,7 @@
 
 Nubli is a Node.JS library for Nuki Smart Locks (**Nu**ki **B**luetooth **Li**brary)
 
-![NPM](https://nodei.co/npm/nubli.png?compact=true)](https://npmjs.org/package/nubli)
+[![NPM](https://nodei.co/npm/nubli.png?compact=true)](https://npmjs.org/package/nubli)
 
 # Features
 * Get Lock State of Nuki Smart Lock (including door sensor)
