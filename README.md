@@ -134,7 +134,7 @@ This library is a work in progress and not yet stable. Use at your own risk. New
     smartlock.on('error', (err: string) => void);
 ```
 
-### Smart Lock Error Event
+### Smart Lock State Changed Event
 ```typescript
     smartlock.on('stateChanged', () => void);
 ```
