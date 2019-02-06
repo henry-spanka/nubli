@@ -27,8 +27,7 @@ export class KeyTurnerStatesCommand extends SmartLockCommand {
         let second: number = payload.readUInt8(9);
         let timeOffset: number = payload.readInt16LE(10);
 
-        let date: Date = new Date(year, month, day, hour, minute, second);
-        date.setUTCMinutes(timeOffset);
+        let date: Date = new Date(Date.UTC(year, month, day, hour, minute, second) + timeOffset * 1000);
 
         this._response.data.currentTime = date;
 
