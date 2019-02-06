@@ -57,7 +57,7 @@ export class Nubli extends Events.EventEmitter {
     private peripheralDiscovered(peripheral: Noble.Peripheral): void {
         for (let smartLock of this._smartlocks) {
             if (peripheral.uuid == smartLock.uuid) {
-                // We already know about this Smart Lock and are probably passive scanning for state changes
+                smartLock.updateManufacturerData(peripheral.advertisement.manufacturerData);
                 return;
             }
         }

@@ -30,6 +30,7 @@ export class SmartLock extends Events.EventEmitter {
     private partialPayload: Buffer = new Buffer(0);
     private currentCommand: SmartLockCommand | null = null;
     private currentMessageLength: number = 0;
+    private stateCounter: number | null = null;
 
     constructor(nubli: Nubli, device: import("noble").Peripheral) {
         super();
@@ -40,6 +41,19 @@ export class SmartLock extends Events.EventEmitter {
         this.nukiPairingCharacteristic = null;
         this.nukiServiceCharacteristic = null;
         this.nukiUserCharacteristic = null;
+    }
+
+    updateManufacturerData(data: Buffer): void {
+        // Hack - Do we have any specification on that?
+        if (data.length == 21) {
+            let stateCounter: number = data.readUInt8(13);
+
+            if (this.stateCounter !== null && stateCounter != this.stateCounter) {
+                this.emit("stateChanged");
+            }
+
+            this.stateCounter = stateCounter;
+        }
     }
 
     async connect(): Promise<void> {
