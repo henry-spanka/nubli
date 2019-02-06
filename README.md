@@ -56,8 +56,6 @@ This library is a work in progress and not yet stable. Use at your own risk. New
     smartlock.disconnect(): Promise<void>;
 ```
 
-**Note**: Before you can connect to a Smart Lock you need to call ```nubli.stopScanning()```
-
 ### Check if a config for the Smart Lock already exists
 ```typescript
     smartlock.configExists(path?: string): boolean;
@@ -91,6 +89,11 @@ This library is a work in progress and not yet stable. Use at your own risk. New
 ### Lock door
 ```typescript
     smartlock.lock(): Promise<SmartLockResponse>;
+```
+
+### Get Config from Smart Lock
+```typescript
+    smartlock.requestConfig(): Promise<SmartLockResponse>;
 ```
 
 ## Properties
@@ -130,6 +133,13 @@ This library is a work in progress and not yet stable. Use at your own risk. New
 ```typescript
     smartlock.on('error', (err: string) => void);
 ```
+
+### Smart Lock Error Event
+```typescript
+    smartlock.on('stateChanged', () => void);
+```
+
+**Note**: The `stateChanged` event only works while scanning.
 
 # Help
 If you have any questions or help please open an issue on the GitHub project page.
