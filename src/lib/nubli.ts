@@ -20,6 +20,32 @@ export class Nubli extends Events.EventEmitter {
             this._configPath = configPath;
         }
 
+        // Override HCI so we can scan passively.
+        Noble._bindings._hci.setScanParameters = () => {
+            var cmd = new Buffer(11);
+
+            let HCI_COMMAND_PKT = 0x01;
+            let OCF_LE_SET_SCAN_PARAMETERS = 0x000b;
+            let OGF_LE_CTL = 0x08;
+            let LE_SET_SCAN_PARAMETERS_CMD = OCF_LE_SET_SCAN_PARAMETERS | OGF_LE_CTL << 10;
+
+            // header
+            cmd.writeUInt8(HCI_COMMAND_PKT, 0);
+            cmd.writeUInt16LE(LE_SET_SCAN_PARAMETERS_CMD, 1);
+
+            // length
+            cmd.writeUInt8(0x07, 3);
+
+            cmd.writeUInt8(0x00, 4); // type: 0 -> passive, 1 -> active
+
+            cmd.writeUInt16LE(0x0010, 5); // internal, ms * 1.6
+            cmd.writeUInt16LE(0x0010, 7); // window, ms * 1.6
+            cmd.writeUInt8(0x00, 9); // own address type: 0 -> public, 1 -> random
+            cmd.writeUInt8(0x00, 10); // filter: 0 -> all event types
+            
+            this.noble._bindings._hci._socket.write(cmd);
+        }
+
         this.noble.on('discover', (peripheral: Noble.Peripheral) => this.peripheralDiscovered(peripheral));
         this.noble.on('stateChange', (state: string) => this.stateChange(state));
     }
@@ -29,18 +55,21 @@ export class Nubli extends Events.EventEmitter {
     }
 
     private peripheralDiscovered(peripheral: Noble.Peripheral): void {
-        if (!this.peripheralFilter.handle(peripheral)) {
-            this.debug("Peripheral did not matched filter: " + peripheral.id + " - " + peripheral.advertisement.localName);
-            return;
+        for (let smartLock of this._smartlocks) {
+            if (peripheral.uuid == smartLock.uuid) {
+                // We already know about this Smart Lock and are probably passive scanning for state changes
+                return;
+            }
         }
+
+        if (!this.peripheralFilter.handle(peripheral)) return;
 
         this.debug("Peripheral matched filter: " + peripheral.id + " - " + peripheral.advertisement.localName);
 
         let smartLock: SmartLock = new SmartLock(this, peripheral);
 
-        this.emit("smartLockDiscovered", smartLock);
-
         this._smartlocks.push(smartLock);
+        this.emit("smartLockDiscovered", smartLock);
     }
 
     get smartlocks(): Array<SmartLock> {
@@ -87,7 +116,7 @@ export class Nubli extends Events.EventEmitter {
             throw new Error("Scanning only possible if the adapter is ready.");
         }
 
-        this.noble.startScanning();
+        this.noble.startScanning([], true);
 
         this.emit("startedScanning");
         this.debug("Started scanning");

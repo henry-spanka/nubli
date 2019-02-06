@@ -11,6 +11,7 @@ import { SmartLockResponse } from "./smartLockResponse";
 import { KeyTurnerStatesCommand } from "./smartLockCommands/KeyTurnerStatesCommand";
 import { LockActionCommand } from "./smartLockCommands/LockActionCommand";
 import { ChallengeCommand } from "./smartLockCommands/ChallengeCommand";
+import { RequestConfigCommand } from "./smartLockCommands/RequestConfigCommand";
 
 export class SmartLock extends Events.EventEmitter {
     static readonly NUKI_SERVICE_UUID = "a92ee200550111e4916c0800200c9a66";
@@ -273,6 +274,12 @@ export class SmartLock extends Events.EventEmitter {
             };
         });
     }
+
+    async requestConfig(): Promise<SmartLockResponse> {
+        this.debug("Reading configuration");
+
+        return await this.executeCommand(new RequestConfigCommand());
+    }
     
     async readLockState(): Promise<SmartLockResponse> {
         this.debug("Reading lock state");
@@ -320,13 +327,13 @@ export class SmartLock extends Events.EventEmitter {
         });
     }
 
-    static prepareCommand(command: Command, data: Buffer | null): Buffer {
+    static prepareCommand(command: Command, data?: Buffer | null): Buffer {
         // We need 2 bytes for the command;
         let buffer = new Buffer(2);
 
         buffer.writeUInt16LE(command, 0);
 
-        if (data === null) {
+        if (data === null || data === undefined) {
             data = new Buffer(0);
         }
 
@@ -461,7 +468,11 @@ export class SmartLock extends Events.EventEmitter {
         this.state = GeneralState.IDLE;
     }
 
+    get uuid(): string {
+        return this.device.uuid;
+    }
+
     debug(message: string) {
-        this.nubli.debug(this.device.id + ": " + message);
+        this.nubli.debug(this.device.uuid + ": " + message);
     }
 }
