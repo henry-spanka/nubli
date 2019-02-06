@@ -73,7 +73,7 @@ export enum LockState {
     CALIBRATION = 0xFC,
     BOOT_RUN = 0xFD,
     MOTOR_BLOCKED = 0xFE,
-    UNDEFINE = 0xFF
+    UNDEFINED = 0xFF
 }
 
 export enum LockAction {
