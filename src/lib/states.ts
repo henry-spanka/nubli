@@ -29,6 +29,8 @@ export enum Command {
     AUTH_AUTHENTICATOR = 0x05,
     AUTH_DATA = 0x06,
     AUTH_ID = 0x07,
+    REQUEST_CONFIG = 0x14,
+    CONFIG = 0x15,
     AUTH_ID_CONFIRM = 0x1E,
     STATUS = 0x0E,
     KEYTURNER_STATES = 0x0C,
@@ -100,4 +102,31 @@ export enum DoorSensor {
     OPEN = 0x03,
     UNKNOWN = 0x04,
     CALIBRATING = 0x05
+}
+
+export enum HomeKit {
+    NOT_AVAILABLE = 0x00,
+    DISABLED = 0x01,
+    ENABLED = 0x02,
+    ENABLED_PAIRED = 0x03
+}
+
+export enum DstMode {
+    DISABLED = 0x00,
+    EUROPEAN = 0x01
+}
+
+export enum FOB_ACTION {
+    NO_ACTION = 0x00,
+    UNLOCK = 0x01,
+    LOCK = 0x02,
+    LOCK_N_GO = 0x03,
+    INTELLIGENT = 0x04
+}
+
+export enum ADVERTISING_MODE {
+    AUTOMATIC = 0x00,
+    NORMAL = 0x01,
+    SLOW = 0x02,
+    SLOWEST = 0x03
 }
