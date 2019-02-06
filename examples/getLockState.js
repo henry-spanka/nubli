@@ -11,19 +11,19 @@ nubli.onReadyToScan()
         console.log(err);
     });
 
-nubli.on("smartLockDiscovered", (smartlock) => {
+nubli.on("smartLockDiscovered", async (smartlock) => {
     nubli.stopScanning();
 
     smartlock.on("connected", () => {
         console.log("connected");
     });
 
+    if (smartlock.configExists()) {
+        await smartlock.readConfig();
+    }
+
     smartlock.connect()
         .then(async () => {
-            if (smartlock.configExists()) {
-                await smartlock.readConfig();
-            }
-
             if (smartlock.paired) {
                 console.log("Good we're paired");
                 let lockState = await smartlock.readLockState();
