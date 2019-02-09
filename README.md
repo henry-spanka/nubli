@@ -96,6 +96,11 @@ This library is a work in progress and not yet stable. Use at your own risk. New
     smartlock.requestConfig(): Promise<SmartLockResponse>;
 ```
 
+### Get Advanced Config from Smart Lock
+```typescript
+    smartlock.requestAdvancedConfig(): Promise<SmartLockResponse>;
+```
+
 ## Properties
 
 ### Check whether a Smart Lock is already paired

@@ -34,7 +34,8 @@ export enum Command {
     AUTH_ID_CONFIRM = 0x1E,
     STATUS = 0x0E,
     KEYTURNER_STATES = 0x0C,
-    LOCK_ACTION = 0x0D
+    LOCK_ACTION = 0x0D,
+    REQUEST_ADVANCED_CONFIG = 0x36
 }
 
 export enum PairingError {
@@ -129,4 +130,20 @@ export enum ADVERTISING_MODE {
     NORMAL = 0x01,
     SLOW = 0x02,
     SLOWEST = 0x03
+}
+
+export enum BUTTON_PRESS_ACTION {
+    NO_ACTION = 0x00,
+    INTELLIGENT = 0x01,
+    UNLOCK = 0x02,
+    LOCK = 0x03,
+    UNLATCH = 0x04,
+    LOCK_N_GO = 0x05,
+    SHOW_STATUS = 0x06
+}
+
+export enum BATTERY_TYPE {
+    ALKALINE = 0x00,
+    AKKUMULATORS = 0x01,
+    LITHIUM = 0x02
 }

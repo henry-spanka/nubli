@@ -12,6 +12,7 @@ import { KeyTurnerStatesCommand } from "./smartLockCommands/KeyTurnerStatesComma
 import { LockActionCommand } from "./smartLockCommands/LockActionCommand";
 import { ChallengeCommand } from "./smartLockCommands/ChallengeCommand";
 import { RequestConfigCommand } from "./smartLockCommands/RequestConfigCommand";
+import { RequestAdvancedConfigCommand } from "./smartLockCommands/RequestAdvancedConfigCommand";
 
 export class SmartLock extends Events.EventEmitter {
     static readonly NUKI_SERVICE_UUID = "a92ee200550111e4916c0800200c9a66";
@@ -300,6 +301,12 @@ export class SmartLock extends Events.EventEmitter {
         this.debug("Reading configuration");
 
         return await this.executeCommand(new RequestConfigCommand());
+    }
+
+    async requestAdvancedConfig(): Promise<SmartLockResponse> {
+        this.debug("Reading advanced configuration");
+
+        return await this.executeCommand(new RequestAdvancedConfigCommand());
     }
     
     async readLockState(): Promise<SmartLockResponse> {
