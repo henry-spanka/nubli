@@ -4,7 +4,6 @@ import { SmartLock } from "../smartLock";
 import { NukiConfig } from "../nukiConfig";
 
 export class RequestConfigCommand extends SmartLockCommand {
-    protected _responseLength: number = 7;
     readonly requiresChallenge = true;
     
     requestData(config: NukiConfig): Buffer {

@@ -4,7 +4,6 @@ import { SmartLock } from "../smartLock";
 import { NukiConfig } from "../nukiConfig";
 
 export class KeyTurnerStatesCommand extends SmartLockCommand {
-    protected _responseLength: number = 4;
     readonly requiresChallenge = false;
     
     requestData(config: NukiConfig): Buffer {

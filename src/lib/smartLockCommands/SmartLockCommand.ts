@@ -2,7 +2,6 @@ import { SmartLockResponse } from "../smartLockResponse";
 import { NukiConfig } from "../nukiConfig";
 
 export abstract class SmartLockCommand {
-    protected abstract _responseLength: number;
     protected _callback?: (response: SmartLockResponse) => void;
     protected _response: SmartLockResponse;
     protected _complete: boolean = false;
@@ -13,10 +12,6 @@ export abstract class SmartLockCommand {
 
     constructor() {
         this._response = new SmartLockResponse();
-    }
-
-    get responseLength(): number {
-        return this._responseLength;
     }
 
     get complete(): boolean {

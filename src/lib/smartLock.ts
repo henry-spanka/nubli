@@ -29,7 +29,6 @@ export class SmartLock extends Events.EventEmitter {
     private state: GeneralState = GeneralState.IDLE;
     private partialPayload: Buffer = new Buffer(0);
     private currentCommand: SmartLockCommand | null = null;
-    private currentMessageLength: number = 0;
     private stateCounter: number | null = null;
 
     constructor(nubli: Nubli, device: import("noble").Peripheral) {
@@ -237,10 +236,6 @@ export class SmartLock extends Events.EventEmitter {
     }
 
     private validateCRC(data: Buffer): boolean {
-        if (this.partialPayload) {
-            data = Buffer.concat([this.partialPayload, data]);
-        }
-
         if (!SmartLock.verifyCRC(data)) {
             let errorMessage = ErrorHandler.errorToMessage(GeneralError.BAD_CRC);
 
@@ -273,17 +268,18 @@ export class SmartLock extends Events.EventEmitter {
     
             await this.setupUSDIOListener();
 
+            let challenge: Buffer | undefined;
+
             if (command.requiresChallenge) {
                 this.currentCommand = new ChallengeCommand();
                 await this.writeEncryptedData(this.currentCommand.requestData(this.config!));
                 let response: SmartLockResponse = await this.waitForResponse();
                 
-                this.currentCommand = command;
-                await this.writeEncryptedData(this.currentCommand.requestData(this.config!), response.data.challenge);
-            } else {
-                this.currentCommand = command;
-                await this.writeEncryptedData(this.currentCommand.requestData(this.config!));
+                challenge = response.data.challenge;
             }
+
+            this.currentCommand = command;
+            await this.writeEncryptedData(this.currentCommand.requestData(this.config!), challenge);
 
             let response: SmartLockResponse = await this.waitForResponse();
             this.state = GeneralState.IDLE;
@@ -424,76 +420,79 @@ export class SmartLock extends Events.EventEmitter {
             return;
         }
 
-        this.currentMessageLength++;
+        payload = Buffer.concat([this.partialPayload, payload]);
 
-        if (this.currentMessageLength != this.currentCommand!.responseLength) {
-            this.partialPayload = Buffer.concat([this.partialPayload, payload]);
-        } else {
-            let encryptedPayload: Buffer = Buffer.concat([this.partialPayload, payload]);
-            this.partialPayload = new Buffer(0);
-
-            let nonce: Buffer = encryptedPayload.slice(0, 24);
-            let authIdentifierUnencrypted: number = encryptedPayload.readUInt32LE(24);
-            let messageLength: number = encryptedPayload.readUInt16LE(28);
-
-            if (authIdentifierUnencrypted != this.config.authorizationId) {
-                this.emit("error", "Invalid authorization identifier");
-                this.resetCommand();
-                return;
-            }
-
-            let encryptedMessage: Buffer = encryptedPayload.slice(30);
-
-            if (messageLength != encryptedMessage.length) {
-                this.emit("error", "Invalid message length");
-                this.resetCommand();
-                return;
-            }
-
-            let decryptedPayload: Buffer;
-            try {
-                 decryptedPayload = Buffer.from(sodium.crypto_secretbox_open_easy(encryptedMessage, nonce, this.config.credentials.sharedSecret));
-            } catch (err) {
-                this.emit("error", "We could not decrypt the payload");
-                this.resetCommand();
-                return;
-            }
-
-            // Validate CRC
-            if (!this.validateCRC(decryptedPayload)) return;
-
-            let authIdentifierEncrypted: number = decryptedPayload.readUInt32LE(0);
-
-            if (authIdentifierEncrypted != this.config.authorizationId) {
-                this.emit("error", "Invalid authorization identifier in encrypted payload");
-                this.resetCommand();
-            }
-
-            let commandIdentifier: number = decryptedPayload.readUInt16LE(4);
-            
-            let decryptedData: Buffer = decryptedPayload.slice(6, decryptedPayload.length - 2);
-
-            this.currentMessageLength = 0;
-
-            if (this.currentCommand) {
-                this.currentCommand.handleData(commandIdentifier, decryptedData);
-
-                if (this.currentCommand.complete) {
-                    this.currentCommand.sendResponse();
-                    this.resetCommand();
-                }
-            } else {
-                this.emit("error", "We received a message and expected one but have no active command. Bug?");
-                this.resetCommand();
-            }
-
+        // In case we cannot read the message length in the first packet
+        if (payload.length < 30) {
+            this.partialPayload = payload;
+            return;
         }
+
+        let messageLength: number = payload.readUInt16LE(28);
+        let encryptedMessage: Buffer = payload.slice(30);
+
+        if (encryptedMessage.length < messageLength) {
+            this.partialPayload = payload;
+            return;
+        } else if (encryptedMessage.length > messageLength) {
+            this.emit("error", "We received too much data.");
+            this.resetCommand();
+            return;
+        }
+
+        // We have received the full message
+        this.partialPayload = new Buffer(0);
+
+        let nonce: Buffer = payload.slice(0, 24);
+        let authIdentifierUnencrypted: number = payload.readUInt32LE(24);
+
+        if (authIdentifierUnencrypted != this.config.authorizationId) {
+            this.emit("error", "Invalid authorization identifier");
+            this.resetCommand();
+            return;
+        }
+
+        let decryptedPayload: Buffer;
+        try {
+            decryptedPayload = Buffer.from(sodium.crypto_secretbox_open_easy(encryptedMessage, nonce, this.config.credentials.sharedSecret));
+        } catch (err) {
+            this.emit("error", "We could not decrypt the payload");
+            this.resetCommand();
+            return;
+        }
+
+        // Validate CRC
+        if (!this.validateCRC(decryptedPayload)) return;
+
+        let authIdentifierEncrypted: number = decryptedPayload.readUInt32LE(0);
+
+        if (authIdentifierEncrypted != this.config.authorizationId) {
+            this.emit("error", "Invalid authorization identifier in encrypted payload");
+            this.resetCommand();
+            return;
+        }
+
+        let commandIdentifier: number = decryptedPayload.readUInt16LE(4);
+        
+        let decryptedData: Buffer = decryptedPayload.slice(6, decryptedPayload.length - 2);
+
+        if (this.currentCommand) {
+            this.currentCommand.handleData(commandIdentifier, decryptedData);
+
+            if (this.currentCommand.complete) {
+                this.currentCommand.sendResponse();
+                this.resetCommand();
+            }
+        } else {
+            this.emit("error", "We received a message and expected one but have no active command. Bug?");
+            this.resetCommand();
+        }
+
     }
 
     private resetCommand() {
         this.currentCommand = null;
-        this.currentMessageLength = 0;
-        this.state = GeneralState.IDLE;
+        this.partialPayload = new Buffer(0);
     }
 
     get uuid(): string {

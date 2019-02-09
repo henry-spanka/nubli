@@ -4,7 +4,6 @@ import { SmartLock } from "../smartLock";
 import { NukiConfig } from "../nukiConfig";
 
 export class LockActionCommand extends SmartLockCommand {
-    protected _responseLength: number = 5;
     readonly requiresChallenge = true;
     private action: LockAction;
 
