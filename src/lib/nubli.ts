@@ -22,7 +22,7 @@ export class Nubli extends Events.EventEmitter {
         }
 
         // Override HCI so we can scan passively.
-        Noble._bindings._hci.setScanParameters = () => {
+        this.noble._bindings._hci.setScanParameters = () => {
             var cmd = new Buffer(11);
 
             let HCI_COMMAND_PKT = 0x01;
@@ -88,7 +88,7 @@ export class Nubli extends Events.EventEmitter {
 
     debug(message: string) {
         if (this.debugEnabled) {
-            console.log(message);
+            console.log(new Date().toLocaleString(), message);
         }
     }
 

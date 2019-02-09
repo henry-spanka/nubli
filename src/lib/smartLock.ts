@@ -41,6 +41,22 @@ export class SmartLock extends Events.EventEmitter {
         this.nukiPairingCharacteristic = null;
         this.nukiServiceCharacteristic = null;
         this.nukiUserCharacteristic = null;
+
+        this.device.on("disconnect", async () => {
+            this.debug("disconnected");
+            this.emit("disconnected");
+
+            if (this.nukiUserCharacteristic) {
+                await this.removeUSDIOListener();
+            }
+
+            // Try to reconnect when we're not done yet
+            if (this.currentCommand != null && !this.currentCommand.complete) {
+                this.debug("Unexpected disconnect. Trying to reconnect.");
+                await this.connect();
+                await this.setupUSDIOListener();
+            }
+        });
     }
 
     updateManufacturerData(data: Buffer): void {
@@ -67,10 +83,6 @@ export class SmartLock extends Events.EventEmitter {
                     } else {
                         this.debug("connected");
                         this.emit("connected");
-                        this.device.on("disconnect", () => {
-                            this.debug("disconnected");
-                            this.emit("disconnected");
-                        });
 
                         resolve();
                     }
@@ -81,10 +93,6 @@ export class SmartLock extends Events.EventEmitter {
 
     async disconnect(): Promise<void> {
         return new Promise<void>(async (resolve, reject) => {
-            if (this.nukiUserCharacteristic) {
-                await this.removeUSDIOListener();
-            }
-            
             this.device.disconnect((error?: string) => {
                 if (error) {
                     reject(error);
@@ -276,8 +284,11 @@ export class SmartLock extends Events.EventEmitter {
                 this.currentCommand = command;
                 await this.writeEncryptedData(this.currentCommand.requestData(this.config!));
             }
+
+            let response: SmartLockResponse = await this.waitForResponse();
+            this.state = GeneralState.IDLE;
     
-            resolve(await this.waitForResponse());
+            resolve(response);
         });
     }
 
@@ -330,14 +341,17 @@ export class SmartLock extends Events.EventEmitter {
 
     private async removeUSDIOListener(): Promise<void> {
         return new Promise<void>((resolve, reject) => {
-            this.nukiUserCharacteristic!.unsubscribe((error?: string) => {
-                this.nukiUserCharacteristic!.removeListener('data', this.usdioDataReceived);
-                if (error) {
-                    reject(error);
-                }
+            this.nukiUserCharacteristic!.removeListener('data', this.usdioDataReceived);
 
-                resolve();
-            });
+            if (this.isConnected()) {
+                this.nukiUserCharacteristic!.unsubscribe((error?: string) => {
+                    if (error) {
+                        reject(error);
+                    }
+    
+                    resolve();
+                });
+            }
         });
     }
 
