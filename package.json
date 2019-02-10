@@ -28,6 +28,9 @@
     },
     "author": "Henry Spanka",
     "license": "MIT",
+    "os": [
+        "linux"
+    ],
     "devDependencies": {
         "@types/crc": "^3.4.0",
         "@types/libsodium-wrappers": "^0.7.5",
