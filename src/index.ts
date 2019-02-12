@@ -1,3 +1,3 @@
 import { Nubli } from "./lib/nubli";
 
-module.exports = new Nubli();
+export let nubli = new Nubli();
