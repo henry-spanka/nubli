@@ -43,10 +43,12 @@ export class SmartLock extends Events.EventEmitter {
         this.nukiUserCharacteristic = null;
 
         this.device.on("disconnect", async () => {
-            await this.removeUSDIOListener();
-
             this.debug("disconnected");
             this.emit("disconnected");
+
+            this.nukiPairingCharacteristic = null;
+            this.nukiServiceCharacteristic = null;
+            this.nukiUserCharacteristic = null;
 
             // Try to reconnect when we're not done yet
             if (this.currentCommand != null && !this.currentCommand.complete) {
@@ -111,6 +113,8 @@ export class SmartLock extends Events.EventEmitter {
 
     async disconnect(): Promise<void> {
         return new Promise<void>(async (resolve, reject) => {
+            await this.removeUSDIOListener();
+
             this.device.disconnect(async (error?: string) => {
                 if (error) {
                     reject(error);
