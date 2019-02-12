@@ -6,8 +6,8 @@
     "types": "dist/index.d.ts",
     "scripts": {
         "prepublish": "npm run build",
-        "build": "tsc",
-        "build-watch": "tsc -w",
+        "build": "./node_modules/typescript/bin/tsc",
+        "build-watch": "./node_modules/typescript/bin/tsc -w",
         "test": "echo \"Error: no test specified\" && exit 1"
     },
     "keywords": [
