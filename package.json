@@ -43,10 +43,6 @@
         "hex-to-array-buffer": "^1.1.0",
         "libsodium-wrappers": "^0.7.4",
         "noble": "^1.9.1",
-        "underscore": "^1.9.1",
-        "xpc-connection": "sandeepmistry/node-xpc-connection#pull/26/head"
-    },
-    "resolutions": {
-        "xpc-connection": "sandeepmistry/node-xpc-connection#pull/26/head"
+        "underscore": "^1.9.1"
     }
 }
