@@ -49,6 +49,19 @@ export class Nubli extends Events.EventEmitter {
 
         this.noble.on('discover', (peripheral: Noble.Peripheral) => this.peripheralDiscovered(peripheral));
         this.noble.on('stateChange', (state: string) => this.stateChange(state));
+
+        // When we connect to an peripheral, scanning will be stopped.
+        // This way we make sure to start scanning again after a short delay (500ms).
+        this.noble.on('scanStop', () => {
+            if (this.scanning) {
+                setTimeout(() => {
+                    this.startScanning();
+                }, 500);
+            } else {
+                this.emit("stoppedScanning");
+                this.debug("Stopped scanning");
+            }
+        });
     }
 
     setDebug(debugEnabled: boolean) {
@@ -117,16 +130,6 @@ export class Nubli extends Events.EventEmitter {
             throw new Error("Scanning only possible if the adapter is ready.");
         }
 
-        // When we connect to an peripheral, scanning will be stopped.
-        // This way we make sure to start scanning again after a short delay (500ms).
-        this.noble.on('scanStop', () => {
-            if (this.scanning) {
-                setTimeout(() => {
-                    this.startScanning();
-                }, 500);
-            }
-        });
-
         this.scanning = true;
         this.noble.startScanning([], true);
 
@@ -137,9 +140,6 @@ export class Nubli extends Events.EventEmitter {
     stopScanning(): void {
         this.scanning = false;
         this.noble.stopScanning();
-
-        this.emit("stoppedScanning");
-        this.debug("Stopped scanning");
     }
 
     get configPath(): string {
