@@ -72,6 +72,8 @@ export class SmartLock extends Events.EventEmitter {
                     let smartLockId: string = data.slice(20, 24).toString('hex').toUpperCase();
                     let rssi: number = data.readInt8(24);
 
+                    this.debug(rssi);
+
                     // Smart Lock sets rssi to -59 if an entry to the activity log has been added.
                     // Once the bridge has read the new state the rssi value will be set back to -60.
                     if (rssi == -59 && !this.stateChanged) {
@@ -94,10 +96,7 @@ export class SmartLock extends Events.EventEmitter {
                     if (error) {
                         reject(error);
                     } else {
-                        if (this.device.services === null || this.device.services.length == 0) {
-                            await this.discoverServicesAndCharacteristics();
-                        }
-
+                        await this.discoverServicesAndCharacteristics();
                         await this.populateCharacteristics();
 
                         await this.setupUSDIOListener();
@@ -518,7 +517,7 @@ export class SmartLock extends Events.EventEmitter {
         return this.device.uuid;
     }
 
-    debug(message: string) {
+    debug(message: string | number) {
         this.nubli.debug(this.device.uuid + ": " + message);
     }
 }
