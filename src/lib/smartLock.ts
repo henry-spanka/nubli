@@ -30,7 +30,7 @@ export class SmartLock extends Events.EventEmitter {
     private state: GeneralState = GeneralState.IDLE;
     private partialPayload: Buffer = new Buffer(0);
     private currentCommand: SmartLockCommand | null = null;
-    private stateCounter: number | null = null;
+    private stateChanged: boolean = false;
 
     constructor(nubli: Nubli, device: import("noble").Peripheral) {
         super();
@@ -57,15 +57,29 @@ export class SmartLock extends Events.EventEmitter {
     }
 
     updateManufacturerData(data: Buffer): void {
-        // Hack - Do we have any specification on that?
-        if (data.length == 21) {
-            let stateCounter: number = data.readUInt8(13);
+        // See: https://developer.nuki.io/t/bluetooth-specification-questions/1109/3
+        if (data.length == 25) {
+            let type: number = data.readUInt8(2);
+            let dataLength: number = data.readUInt8(3);
+            
+            // 0x02 == iBeacon
+            if (type == 2 && dataLength == 21) {
+                let serviceUuid: string = data.slice(4, 20).toString('hex');
+                
+                if (serviceUuid == SmartLock.NUKI_SERVICE_UUID) {
+                    let smartLockId: string = data.slice(20, 24).toString('hex').toUpperCase();
+                    let rssi: number = data.readInt8(24);
 
-            if (this.stateCounter !== null && stateCounter != this.stateCounter) {
-                this.emit("stateChanged");
+                    // Smart Lock sets rssi to -59 if an entry to the activity log has been added.
+                    // Once the bridge has read the new state the rssi value will be set back to -60.
+                    if (rssi == -59 && !this.stateChanged) {
+                        this.stateChanged = true;
+                        this.emit("stateChanged");
+                    } else {
+                        this.stateChanged = false;
+                    }
+                }
             }
-
-            this.stateCounter = stateCounter;
         }
     }
 
