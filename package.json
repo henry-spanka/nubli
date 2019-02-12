@@ -30,11 +30,12 @@
     "license": "MIT",
     "os": [
         "linux",
-	"darwin"
+        "darwin"
     ],
     "devDependencies": {
         "@types/crc": "^3.4.0",
         "@types/libsodium-wrappers": "^0.7.5",
+        "@types/noble": "0.0.38",
         "@types/node": "^10.12.21",
         "typescript": "^3.3.1"
     },
