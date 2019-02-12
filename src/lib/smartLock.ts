@@ -96,8 +96,9 @@ export class SmartLock extends Events.EventEmitter {
                     } else {
                         if (this.device.services === null || this.device.services.length == 0) {
                             await this.discoverServicesAndCharacteristics();
-                            await this.populateCharacteristics();
                         }
+
+                        await this.populateCharacteristics();
 
                         await this.setupUSDIOListener();
 
