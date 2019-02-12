@@ -43,18 +43,15 @@ export class SmartLock extends Events.EventEmitter {
         this.nukiUserCharacteristic = null;
 
         this.device.on("disconnect", async () => {
+            await this.removeUSDIOListener();
+
             this.debug("disconnected");
             this.emit("disconnected");
-
-            if (this.nukiUserCharacteristic) {
-                await this.removeUSDIOListener();
-            }
 
             // Try to reconnect when we're not done yet
             if (this.currentCommand != null && !this.currentCommand.complete) {
                 this.debug("Unexpected disconnect. Trying to reconnect.");
                 await this.connect();
-                await this.setupUSDIOListener();
             }
         });
     }
@@ -77,10 +74,17 @@ export class SmartLock extends Events.EventEmitter {
             if (!this.device.connectable) {
                 reject("Device is not connectable.");
             } else {
-                this.device.connect((error?: string) => {
+                this.device.connect(async (error?: string) => {
                     if (error) {
                         reject(error);
                     } else {
+                        if (this.device.services === null || this.device.services.length == 0) {
+                            await this.discoverServicesAndCharacteristics();
+                            await this.populateCharacteristics();
+                        }
+
+                        await this.setupUSDIOListener();
+
                         this.debug("connected");
                         this.emit("connected");
 
@@ -93,7 +97,7 @@ export class SmartLock extends Events.EventEmitter {
 
     async disconnect(): Promise<void> {
         return new Promise<void>(async (resolve, reject) => {
-            this.device.disconnect((error?: string) => {
+            this.device.disconnect(async (error?: string) => {
                 if (error) {
                     reject(error);
                 } else {
@@ -150,12 +154,7 @@ export class SmartLock extends Events.EventEmitter {
                 return;
             }
 
-            await this.discoverServicesAndCharacteristics();
-
-            if (!this.populateAndValidateCharacteristics()) {
-                reject("The device is not a valid smart lock");
-                return;
-            }
+            this.validateCharacteristics();
 
             this.debug("All characteristics found. Trying to pair");
 
@@ -196,7 +195,7 @@ export class SmartLock extends Events.EventEmitter {
         });
     }
 
-    private populateAndValidateCharacteristics(): boolean {
+    private populateCharacteristics(): void {
         for (let service of this.device.services) {
             for (let characteristic of service.characteristics) {
                 switch (characteristic.uuid) {
@@ -212,12 +211,11 @@ export class SmartLock extends Events.EventEmitter {
                 }
             }
         }
+    }
 
-        if (this.nukiPairingCharacteristic && this.nukiServiceCharacteristic && this.nukiUserCharacteristic) {
-            return true;
-
-        } else {
-            return false;
+    private validateCharacteristics(): void {
+        if (!this.nukiPairingCharacteristic || !this.nukiServiceCharacteristic || !this.nukiUserCharacteristic) {
+            throw new Error("The device is not a Smart Lock.");
         }
     }
 
@@ -260,14 +258,7 @@ export class SmartLock extends Events.EventEmitter {
         this.debug("Executing command");
 
         return new Promise<SmartLockResponse>(async (resolve, reject) => {
-            await this.discoverServicesAndCharacteristics();
-
-            if (!this.populateAndValidateCharacteristics()) {
-                reject("The device is not a valid smart lock");
-                return;
-            }
-    
-            await this.setupUSDIOListener();
+            this.validateCharacteristics();
 
             let challenge: Buffer | undefined;
 
@@ -354,6 +345,8 @@ export class SmartLock extends Events.EventEmitter {
     
                     resolve();
                 });
+            } else {
+                resolve();
             }
         });
     }
