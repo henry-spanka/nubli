@@ -29,7 +29,8 @@
     "author": "Henry Spanka",
     "license": "MIT",
     "os": [
-        "linux"
+        "linux",
+	"darwin"
     ],
     "devDependencies": {
         "@types/crc": "^3.4.0",
