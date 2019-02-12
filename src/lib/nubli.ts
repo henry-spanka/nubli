@@ -50,6 +50,15 @@ export class Nubli extends Events.EventEmitter {
         this.noble.on('discover', (peripheral: Noble.Peripheral) => this.peripheralDiscovered(peripheral));
         this.noble.on('stateChange', (state: string) => this.stateChange(state));
 
+        this.noble.on('scanStart', () => {
+            if (!this.scanning) {
+                this.emit("startedScanning");
+                this.debug("Started scanning");
+            }
+
+            this.scanning = true;
+        })
+
         // When we connect to an peripheral, scanning will be stopped.
         // This way we make sure to start scanning again after a short delay (500ms).
         this.noble.on('scanStop', () => {
@@ -130,11 +139,7 @@ export class Nubli extends Events.EventEmitter {
             throw new Error("Scanning only possible if the adapter is ready.");
         }
 
-        this.scanning = true;
         this.noble.startScanning([], true);
-
-        this.emit("startedScanning");
-        this.debug("Started scanning");
     }
 
     stopScanning(): void {
