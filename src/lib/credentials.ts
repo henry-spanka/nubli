@@ -1,6 +1,6 @@
 import sodium from "libsodium-wrappers";
-import HSalsa20 from "./hsalsa20";
 import arrayBufferToHex from "array-buffer-to-hex";
+import { Hsalsa20 } from "./hsalsa20";
 
 export class Credentials {
     private _slPublicKey: Buffer | null = null;
@@ -50,9 +50,7 @@ export class Credentials {
         inv.fill(0);
         let crypto = new Buffer("expand 32-byte k");
 
-        let hsalsa20 = new HSalsa20();
-
-        hsalsa20.crypto_core(sharedSecret, inv, dhKey, crypto);
+        Hsalsa20.crypto_core(sharedSecret, inv, dhKey, crypto);
 
         this._sharedSecret = sharedSecret;
     }
