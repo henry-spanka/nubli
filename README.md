@@ -139,12 +139,12 @@ This library is a work in progress and not yet stable. Use at your own risk. New
     smartlock.on('error', (err: string) => void);
 ```
 
-### Smart Lock State Changed Event
+### Smart Lock Activity Log Changed Event
 ```typescript
-    smartlock.on('stateChanged', () => void);
+    smartlock.on('activityLogChanged', () => void);
 ```
 
-**Note**: The `stateChanged` event only works while scanning.
+**Note**: The `activityLogChanged` event only works while scanning.
 
 # Help
 If you have any questions or help please open an issue on the GitHub project page.

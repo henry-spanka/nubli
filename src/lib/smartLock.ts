@@ -76,7 +76,7 @@ export class SmartLock extends Events.EventEmitter {
                     // Once the bridge has read the new state the rssi value will be set back to -60.
                     if (rssi == -59 && !this.stateChanged) {
                         this.stateChanged = true;
-                        this.emit("stateChanged");
+                        this.emit("activityLogChanged");
                     } else {
                         this.stateChanged = false;
                     }

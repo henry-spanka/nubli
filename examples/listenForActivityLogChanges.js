@@ -16,14 +16,17 @@ nubli.on("smartLockDiscovered", async (smartlock) => {
         await smartlock.readConfig();
     }
 
-    console.log("Listening for changes");
+    console.log("Listening for activity log changes");
 
-    smartlock.on("stateChanged", () => {
+    smartlock.on("activityLogChanged", () => {
+        console.log("changed - retrieving state now");
         smartlock.connect()
         .then(async () => {
             let lockState = await smartlock.readLockState();
             console.log(lockState);
             await smartlock.disconnect();
+        }).catch((err) => {
+            console.log("connection failed:", err);
         });
     });
 });
