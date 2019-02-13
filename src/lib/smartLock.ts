@@ -31,6 +31,7 @@ export class SmartLock extends Events.EventEmitter {
     private partialPayload: Buffer = new Buffer(0);
     private currentCommand: SmartLockCommand | null = null;
     private stateChanged: boolean = false;
+    private shouldBeConnected: boolean = false;
 
     constructor(nubli: Nubli, device: import("noble").Peripheral) {
         super();
@@ -51,7 +52,7 @@ export class SmartLock extends Events.EventEmitter {
             this.nukiUserCharacteristic = null;
 
             // Try to reconnect when we're not done yet
-            if (this.currentCommand != null && !this.currentCommand.complete) {
+            if (this.shouldBeConnected && !this.isConnected()) {
                 this.debug("Unexpected disconnect. Trying to reconnect.");
                 await this.connect();
             }
@@ -88,10 +89,17 @@ export class SmartLock extends Events.EventEmitter {
     }
 
     async connect(): Promise<void> {
+        this.shouldBeConnected = true;
+
         return new Promise<void>((resolve, reject) => {
             if (!this.device.connectable) {
                 reject("Device is not connectable.");
             } else {
+                if (this.isConnected()) {
+                    resolve();
+                    return;
+                }
+
                 this.device.connect(async (error?: string) => {
                     if (error) {
                         reject(error);
@@ -112,6 +120,8 @@ export class SmartLock extends Events.EventEmitter {
     }
 
     async disconnect(): Promise<void> {
+        this.shouldBeConnected = false;
+
         return new Promise<void>(async (resolve, reject) => {
             await this.removeUSDIOListener();
 
@@ -276,6 +286,10 @@ export class SmartLock extends Events.EventEmitter {
         this.debug("Executing command");
 
         return new Promise<SmartLockResponse>(async (resolve, reject) => {
+            if (!this.isConnected) {
+                await this.connect();
+            }
+
             this.validateCharacteristics();
 
             let challenge: Buffer | undefined;
