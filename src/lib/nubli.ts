@@ -10,7 +10,7 @@ export class Nubli extends Events.EventEmitter {
     private peripheralFilter: PeripheralFilter;
     private _smartlocks: Array<SmartLock> = [];
     private _configPath: string = "./config/";
-    private scanning: boolean = false;
+    private _scanning: boolean = false;
     private activeScanning: boolean = false;
 
     constructor(peripheralFilter: PeripheralFilter = new SmartLockPeripheralFilter(), configPath?: string) {
@@ -56,20 +56,20 @@ export class Nubli extends Events.EventEmitter {
         this.noble.on('stateChange', (state: string) => this.stateChange(state));
 
         this.noble.on('scanStart', () => {
-            if (!this.scanning) {
+            if (!this._scanning) {
                 this.emit("startedScanning");
                 this.debug("Started scanning");
             }
 
-            this.scanning = true;
+            this._scanning = true;
         })
 
         // When we connect to an peripheral, scanning will be stopped.
         // This way we make sure to start scanning again after a short delay (500ms).
         this.noble.on('scanStop', () => {
-            if (this.scanning) {
+            if (this._scanning) {
                 setTimeout(() => {
-                    if (this.scanning) {
+                    if (this._scanning) {
                         this.startScanning();
                     }
                 }, 500);
@@ -160,12 +160,16 @@ export class Nubli extends Events.EventEmitter {
     }
 
     stopScanning(): void {
-        this.scanning = false;
+        this._scanning = false;
         this.activeScanning = false;
         this.noble.stopScanning();
     }
 
     get configPath(): string {
         return this._configPath;
+    }
+
+    get scanning(): boolean {
+        return this._scanning;
     }
 }

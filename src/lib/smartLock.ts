@@ -61,7 +61,7 @@ export class SmartLock extends Events.EventEmitter {
 
         // Check if the Smart Lock is stale
         setInterval(() => {
-            if (!this._stale && (new Date().getTime() - this.lastManufacturerDataReceived.getTime()) / 1000 > 60) {
+            if (this.nubli.scanning && !this._stale && (new Date().getTime() - this.lastManufacturerDataReceived.getTime()) / 1000 > 60) {
                 this.debug("No Advertisement received from Smart Lock within 60 seconds - Marking Smart Lock as stale.");
                 this._stale = true;
                 this.emit("stale");
