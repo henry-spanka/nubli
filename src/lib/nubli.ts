@@ -88,7 +88,7 @@ export class Nubli extends Events.EventEmitter {
         for (let smartLock of this._smartlocks) {
             if (peripheral.uuid == smartLock.uuid) {
                 if ("manufacturerData" in peripheral.advertisement && peripheral.advertisement.manufacturerData !== null
-                && peripheral.advertisement.manufacturerData === undefined) {
+                && peripheral.advertisement.manufacturerData !== undefined) {
                     smartLock.updateManufacturerData(peripheral.advertisement.manufacturerData);
                 }
 
