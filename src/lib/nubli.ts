@@ -79,7 +79,7 @@ export class Nubli extends Events.EventEmitter {
 
     private peripheralDiscovered(peripheral: Noble.Peripheral): void {
         for (let smartLock of this._smartlocks) {
-            if (peripheral.uuid == smartLock.uuid) {
+            if (peripheral.uuid == smartLock.uuid && peripheral.advertisement.manufacturerData !== null) {
                 smartLock.updateManufacturerData(peripheral.advertisement.manufacturerData);
                 return;
             }
