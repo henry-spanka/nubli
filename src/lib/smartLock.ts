@@ -31,7 +31,6 @@ export class SmartLock extends Events.EventEmitter {
     private partialPayload: Buffer = new Buffer(0);
     private currentCommand: SmartLockCommand | null = null;
     private stateChanged: boolean = false;
-    private shouldBeConnected: boolean = false;
     private lastManufacturerDataReceived: Date = new Date();
     private _stale: boolean = false;
 
@@ -53,10 +52,10 @@ export class SmartLock extends Events.EventEmitter {
             this.nukiServiceCharacteristic = null;
             this.nukiUserCharacteristic = null;
 
-            // Try to reconnect when we're not done yet
-            if (this.shouldBeConnected && !this.isConnected()) {
-                this.debug("Unexpected disconnect. Trying to reconnect.");
-                await this.connect();
+            if (this.currentCommand && !this.currentCommand.complete) {
+                this.debug("Unexpected disconnect during command execution.");
+                this.currentCommand.sendFailure();
+                this.resetCommand();
             }
         });
 
@@ -96,9 +95,11 @@ export class SmartLock extends Events.EventEmitter {
 
                     // Smart Lock sets rssi to -59 if an entry to the activity log has been added.
                     // Once the bridge has read the new state the rssi value will be set back to -60.
-                    if (rssi == -59 && !this.stateChanged) {
-                        this.stateChanged = true;
-                        this.emit("activityLogChanged");
+                    if (rssi == -59) {
+                        if (!this.stateChanged) {
+                            this.stateChanged = true;
+                            this.emit("activityLogChanged");
+                        }
                     } else {
                         this.stateChanged = false;
                     }
@@ -108,8 +109,6 @@ export class SmartLock extends Events.EventEmitter {
     }
 
     async connect(): Promise<void> {
-        this.shouldBeConnected = true;
-
         return new Promise<void>((resolve, reject) => {
             if (!this.device.connectable) {
                 reject("Device is not connectable.");
@@ -139,8 +138,6 @@ export class SmartLock extends Events.EventEmitter {
     }
 
     async disconnect(): Promise<void> {
-        this.shouldBeConnected = false;
-
         return new Promise<void>(async (resolve, reject) => {
             await this.removeUSDIOListener();
 
@@ -306,7 +303,13 @@ export class SmartLock extends Events.EventEmitter {
 
         return new Promise<SmartLockResponse>(async (resolve, reject) => {
             if (!this.isConnected()) {
-                await this.connect();
+                try {
+                    await this.connect();
+                } catch (error) {
+                    this.state = GeneralState.IDLE;
+                    reject(error);
+                    return;
+                }
             }
 
             this.validateCharacteristics();
@@ -316,15 +319,30 @@ export class SmartLock extends Events.EventEmitter {
             if (command.requiresChallenge) {
                 this.currentCommand = new ChallengeCommand();
                 await this.writeEncryptedData(this.currentCommand.requestData(this.config!));
-                let response: SmartLockResponse = await this.waitForResponse();
-                
-                challenge = response.data.challenge;
+                try {
+                    let response: SmartLockResponse = await this.waitForResponse();
+                    challenge = response.data.challenge;
+                } catch (error) {
+                    this.state = GeneralState.IDLE;
+                    reject(error);
+                    return;
+                }
             }
 
             this.currentCommand = command;
+            
             await this.writeEncryptedData(this.currentCommand.requestData(this.config!), challenge);
 
-            let response: SmartLockResponse = await this.waitForResponse();
+            let response: SmartLockResponse;
+
+            try {
+                response = await this.waitForResponse();
+            } catch (error) {
+                this.state = GeneralState.IDLE;
+                reject(error);
+                return;
+            }
+
             this.state = GeneralState.IDLE;
     
             resolve(response);
@@ -334,7 +352,11 @@ export class SmartLock extends Events.EventEmitter {
     async waitForResponse(): Promise<SmartLockResponse> {
         return new Promise<SmartLockResponse>(async (resolve, reject) => {
             this.currentCommand!.callback = (response: SmartLockResponse) => {
-                resolve(response);
+                if (response.success) {
+                    resolve(response);
+                } else {
+                    reject(response);
+                }
             };
         });
     }

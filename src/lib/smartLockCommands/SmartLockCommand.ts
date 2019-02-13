@@ -32,4 +32,10 @@ export abstract class SmartLockCommand {
             this._callback = undefined;
         }
     }
+
+    sendFailure(): void {
+        this._response.success = false;
+
+        this.sendResponse();
+    }
 }
