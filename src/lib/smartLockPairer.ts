@@ -11,11 +11,12 @@ export class SmartLockPairer extends Events.EventEmitter {
     private config: NukiConfig;
     private partialPayload: Buffer | null = null;
     private nonceABF: Uint8Array | null = null;
+    private asBridge: boolean;
 
     // The first packet should not be verified as it does not contain any CRC and is only partial.
     private verifyCRC: boolean = false;
 
-    constructor(nukiPairingCharacteristic: import("noble").Characteristic, nukiConfig: NukiConfig) {
+    constructor(nukiPairingCharacteristic: import("noble").Characteristic, nukiConfig: NukiConfig, asBridge: boolean) {
         super();
 
         if (nukiPairingCharacteristic === null) {
@@ -24,6 +25,7 @@ export class SmartLockPairer extends Events.EventEmitter {
 
         this.nukiPairingCharacteristic = nukiPairingCharacteristic;
         this.config = nukiConfig;
+        this.asBridge = asBridge;
     }
 
     private async setupPairListener(): Promise<void> {
@@ -282,8 +284,14 @@ export class SmartLockPairer extends Events.EventEmitter {
     private generateAuthorizationData(): Buffer {
         let id: Buffer = new Buffer(5);
 
-        // We are an app
-        id.writeUInt8(0, 0);
+        if (this.asBridge) {
+            // We are a bridge
+            id.writeUInt8(1, 0);
+        } else {
+            // We are an app
+            id.writeUInt8(0, 0);
+        }
+        
         id.writeUInt32LE(this.config.appId, 1);
 
         let name = new Buffer(32).fill(' ');

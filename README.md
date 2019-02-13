@@ -78,8 +78,10 @@ This library is a work in progress and not yet stable. Use at your own risk. New
 
 ### Pair with a Smart Lock
 ```typescript
-    smartlock.pair(): Promise<void>;
+    smartlock.pair(asBridge = true): Promise<void>;
 ```
+
+**Note**: By default it will pair as bridge. If you do have a bridge, make sure to pass false as a parameter. The reason is, that when no bridge exists, Nuki will not push any state changes automatically via advertisements, so we set ourselves as a bridge instead.
 
 ### Read lock state from Smart Lock
 ```typescript
