@@ -282,8 +282,8 @@ export class SmartLockPairer extends Events.EventEmitter {
     private generateAuthorizationData(): Buffer {
         let id: Buffer = new Buffer(5);
 
-        // We are a bridge
-        id.writeUInt8(1, 0);
+        // We are an app
+        id.writeUInt8(0, 0);
         id.writeUInt32LE(this.config.appId, 1);
 
         let name = new Buffer(32).fill(' ');
