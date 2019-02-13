@@ -286,7 +286,7 @@ export class SmartLock extends Events.EventEmitter {
         this.debug("Executing command");
 
         return new Promise<SmartLockResponse>(async (resolve, reject) => {
-            if (!this.isConnected) {
+            if (!this.isConnected()) {
                 await this.connect();
             }
 
