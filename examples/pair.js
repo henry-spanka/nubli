@@ -5,7 +5,7 @@ nubli.setDebug(true);
 nubli.onReadyToScan()
     .then(() => {
         console.log("Ready to scan :)");
-        nubli.startScanning();
+        nubli.startActiveScanning();
     })
     .catch((err) => {
         console.log(err);

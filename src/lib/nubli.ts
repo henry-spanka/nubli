@@ -11,6 +11,7 @@ export class Nubli extends Events.EventEmitter {
     private _smartlocks: Array<SmartLock> = [];
     private _configPath: string = "./config/";
     private scanning: boolean = false;
+    private activeScanning: boolean = false;
 
     constructor(peripheralFilter: PeripheralFilter = new SmartLockPeripheralFilter(), configPath?: string) {
         super();
@@ -37,7 +38,11 @@ export class Nubli extends Events.EventEmitter {
             // length
             cmd.writeUInt8(0x07, 3);
 
-            cmd.writeUInt8(0x00, 4); // type: 0 -> passive, 1 -> active
+            if (this.activeScanning) {
+                cmd.writeUInt8(0x01, 4); // type: 0 -> passive, 1 -> active
+            } else {
+                cmd.writeUInt8(0x00, 4); // type: 0 -> passive, 1 -> active
+            }
 
             cmd.writeUInt16LE(0x0010, 5); // internal, ms * 1.6
             cmd.writeUInt16LE(0x0010, 7); // window, ms * 1.6
@@ -80,13 +85,13 @@ export class Nubli extends Events.EventEmitter {
     }
 
     private peripheralDiscovered(peripheral: Noble.Peripheral): void {
-        if (!("manufacturerData" in peripheral.advertisement) || peripheral.advertisement.manufacturerData === null) {
-            return;
-        }
-        
         for (let smartLock of this._smartlocks) {
             if (peripheral.uuid == smartLock.uuid) {
-                smartLock.updateManufacturerData(peripheral.advertisement.manufacturerData);
+                if ("manufacturerData" in peripheral.advertisement && peripheral.advertisement.manufacturerData !== null
+                && peripheral.advertisement.manufacturerData === undefined) {
+                    smartLock.updateManufacturerData(peripheral.advertisement.manufacturerData);
+                }
+
                 return;
             }
         }
@@ -140,6 +145,12 @@ export class Nubli extends Events.EventEmitter {
         });
     }
 
+    startActiveScanning(): void {
+        this.activeScanning = true;
+
+        this.startScanning();
+    }
+
     startScanning(): void {
         if (!this.readyToScan()) {
             throw new Error("Scanning only possible if the adapter is ready.");
@@ -150,6 +161,7 @@ export class Nubli extends Events.EventEmitter {
 
     stopScanning(): void {
         this.scanning = false;
+        this.activeScanning = false;
         this.noble.stopScanning();
     }
 

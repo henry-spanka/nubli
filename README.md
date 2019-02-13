@@ -39,6 +39,11 @@ This library is a work in progress and not yet stable. Use at your own risk. New
     nubli.startScanning(): void;
 ```
 
+### Start Actively Scanning for Nuki devices (Required for pairing)
+```typescript
+    nubli.startActiveScanning(): void;
+```
+
 **Note**: Scanning requires the bluetooth device to be powered on. This may take a few milliseconds. Make sure to wait for the promise ```nubli.readyToScan()``` to resolve first.
 
 ### Stop Scanning for Nuki devices
