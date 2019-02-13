@@ -80,7 +80,7 @@ export class Nubli extends Events.EventEmitter {
     }
 
     private peripheralDiscovered(peripheral: Noble.Peripheral): void {
-        if (peripheral.advertisement.manufacturerData === null) {
+        if (!("manufacturerData" in peripheral.advertisement) || peripheral.advertisement.manufacturerData === null) {
             return;
         }
         
