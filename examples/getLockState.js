@@ -1,4 +1,4 @@
-const nubli = require('../dist/index.js');
+const nubli = require('../dist/index.js').default;
 
 nubli.setDebug(true);
 

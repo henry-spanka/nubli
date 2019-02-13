@@ -21,7 +21,7 @@ This library is a work in progress and not yet stable. Use at your own risk. New
 
 # Usage
 ```typescript
-    const nubli = require('nubli');
+    const nubli = require('nubli').default;
 
     nubli.onReadyToScan()
     .then(() => {
