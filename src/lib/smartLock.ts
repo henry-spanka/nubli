@@ -32,6 +32,8 @@ export class SmartLock extends Events.EventEmitter {
     private currentCommand: SmartLockCommand | null = null;
     private stateChanged: boolean = false;
     private shouldBeConnected: boolean = false;
+    private lastManufacturerDataReceived: Date = new Date();
+    private _stale: boolean = false;
 
     constructor(nubli: Nubli, device: import("noble").Peripheral) {
         super();
@@ -57,6 +59,15 @@ export class SmartLock extends Events.EventEmitter {
                 await this.connect();
             }
         });
+
+        // Check if the Smart Lock is stale
+        setInterval(() => {
+            if (!this._stale && (new Date().getTime() - this.lastManufacturerDataReceived.getTime()) / 1000 > 30) {
+                this.debug("No Advertisement received from Smart Lock within 30 seconds - Marking Smart Lock as stale.");
+                this._stale = true;
+                this.emit("stale");
+            }
+        }, 60 * 1000);
     }
 
     updateManufacturerData(data: Buffer): void {
@@ -74,6 +85,14 @@ export class SmartLock extends Events.EventEmitter {
                     let rssi: number = data.readInt8(24);
 
                     this.debug(rssi);
+                    this.lastManufacturerDataReceived = new Date();
+
+                    if (this._stale) {
+                        this._stale = false;
+
+                        this.debug("Received advertisements again - Marking Smart Lock as recovered.");
+                        this.emit("staleRecovered");
+                    }
 
                     // Smart Lock sets rssi to -59 if an entry to the activity log has been added.
                     // Once the bridge has read the new state the rssi value will be set back to -60.
@@ -529,6 +548,10 @@ export class SmartLock extends Events.EventEmitter {
 
     get uuid(): string {
         return this.device.uuid;
+    }
+
+    get stale(): boolean {
+        return this._stale;
     }
 
     debug(message: string | number) {
