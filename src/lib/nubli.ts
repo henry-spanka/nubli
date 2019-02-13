@@ -64,7 +64,9 @@ export class Nubli extends Events.EventEmitter {
         this.noble.on('scanStop', () => {
             if (this.scanning) {
                 setTimeout(() => {
-                    this.startScanning();
+                    if (this.scanning) {
+                        this.startScanning();
+                    }
                 }, 500);
             } else {
                 this.emit("stoppedScanning");
