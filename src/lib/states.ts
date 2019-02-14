@@ -29,12 +29,15 @@ export enum Command {
     AUTH_AUTHENTICATOR = 0x05,
     AUTH_DATA = 0x06,
     AUTH_ID = 0x07,
+    REQUEST_AUTHORIZATION_ENTRIES = 0x09,
+    AUTHORIZATION_ENTRY = 0x0A,
     REQUEST_CONFIG = 0x14,
     CONFIG = 0x15,
     AUTH_ID_CONFIRM = 0x1E,
     STATUS = 0x0E,
     KEYTURNER_STATES = 0x0C,
     LOCK_ACTION = 0x0D,
+    AUTHORIZATION_ENTRY_COUNT = 0x27,
     REQUEST_ADVANCED_CONFIG = 0x36
 }
 
@@ -49,6 +52,10 @@ export enum GeneralError {
     BAD_CRC = 0xFD,
     BAD_LENGTH = 0xFE,
     UNKNOWN = 0xFF
+}
+
+export enum KeyturnerError {
+    BAD_PIN = 0x21
 }
 
 export enum Status {

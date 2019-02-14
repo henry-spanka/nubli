@@ -45,8 +45,12 @@ export abstract class SmartLockCommand {
         }
     }
 
-    sendFailure(): void {
+    sendFailure(errorMessage?: string): void {
         this._response.success = false;
+        
+        if (errorMessage !== undefined && errorMessage !== null) {
+            this._response.message = errorMessage;
+        }
 
         this.sendResponse();
     }

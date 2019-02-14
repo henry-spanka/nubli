@@ -390,6 +390,12 @@ export class SmartLock extends Events.EventEmitter {
         return await this.executeCommand(new LockActionCommand(LockAction.LOCK));
     }
 
+    async requestAuthorizations(pin: number, offset: number, count: number): Promise<SmartLockResponse> {
+        this.debug("Requesting authorizations");
+
+        return await this.executeCommand(new RequestAuthorizationsCommand(pin, offset, count));
+    }
+
     private async setupUSDIOListener(): Promise<void> {
         return new Promise<void>((resolve, reject) => {
             this.nukiUserCharacteristic!.subscribe((error?: string) => {
@@ -545,6 +551,13 @@ export class SmartLock extends Events.EventEmitter {
         let decryptedData: Buffer = decryptedPayload.slice(6, decryptedPayload.length - 2);
 
         if (this.currentCommand) {
+            if (commandIdentifier == Command.ERROR_REPORT) {
+                let errorMessage: string = ErrorHandler.errorToMessage(decryptedData.readInt8(0));
+                this.currentCommand.sendFailure(errorMessage);
+                this.resetCommand();
+                return;
+            }
+
             this.currentCommand.handleData(commandIdentifier, decryptedData);
 
             if (this.currentCommand.complete) {

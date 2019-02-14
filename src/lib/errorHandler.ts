@@ -1,4 +1,4 @@
-import { PairingError, GeneralError }  from "./states";
+import { PairingError, GeneralError, KeyturnerError }  from "./states";
 
 export class ErrorHandler {
     static errorToMessage(errCode: number): string {
@@ -17,6 +17,8 @@ export class ErrorHandler {
                 return "Unexpected length of payload";
             case GeneralError.UNKNOWN:
                 return "Unknown error";
+            case KeyturnerError.BAD_PIN:
+                return "The provided PIN is invalid";
 
             default:
                 return "Unknown error - code: 0x" + errCode.toString(16);

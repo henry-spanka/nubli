@@ -1,5 +1,12 @@
 const nubli = require('../dist/index.js').default;
 
+if (process.argv.length != 3) {
+    console.log("Security PIN as argument required.");
+    process.exit(1);
+}
+
+let pin = process.argv[2];
+
 nubli.setDebug(true);
 
 nubli.onReadyToScan()
@@ -26,8 +33,13 @@ nubli.on("smartLockDiscovered", async (smartlock) => {
         .then(async () => {
             if (smartlock.paired) {
                 console.log("Good we're paired");
-                let lockState = await smartlock.lock();
-                console.log(lockState);
+
+                try {
+                    let lockState = await smartlock.requestAuthorizations(pin);
+                    console.log(JSON.stringify(lockState, null, 4));
+                } catch (error) {
+                    console.log(error.message);
+                }
                 
                 smartlock.disconnect();
             } else {
