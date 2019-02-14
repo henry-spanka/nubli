@@ -30,7 +30,7 @@ export class SmartLock extends Events.EventEmitter {
     private state: GeneralState = GeneralState.IDLE;
     private partialPayload: Buffer = new Buffer(0);
     private currentCommand: SmartLockCommand | null = null;
-    private stateChanged: boolean = false;
+    private stateChanged: Date | null = null;
     private lastManufacturerDataReceived: Date = new Date();
     private _stale: boolean = false;
 
@@ -96,12 +96,12 @@ export class SmartLock extends Events.EventEmitter {
                     // Smart Lock sets rssi to -59 if an entry to the activity log has been added.
                     // Once the bridge has read the new state the rssi value will be set back to -60.
                     if (rssi == -59) {
-                        if (!this.stateChanged) {
-                            this.stateChanged = true;
+                        if (!this.stateChanged || (new Date().getTime() - this.stateChanged.getTime()) / 1000 > 60) {
+                            this.stateChanged = new Date();
                             this.emit("activityLogChanged");
                         }
                     } else {
-                        this.stateChanged = false;
+                        this.stateChanged = null;
                     }
                 }
             }
