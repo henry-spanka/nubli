@@ -7,7 +7,7 @@ export class RequestConfigCommand extends SmartLockCommand {
     readonly requiresChallenge = true;
     
     requestData(config: NukiConfig): Buffer {
-        return SmartLock.prepareCommand(Command.REQUEST_CONFIG);
+        return SmartLock.prepareCommand(Command.REQUEST_CONFIG, this.challenge);
     }
 
     handleData(command: number, payload: Buffer): void {

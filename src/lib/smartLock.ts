@@ -13,6 +13,7 @@ import { LockActionCommand } from "./smartLockCommands/LockActionCommand";
 import { ChallengeCommand } from "./smartLockCommands/ChallengeCommand";
 import { RequestConfigCommand } from "./smartLockCommands/RequestConfigCommand";
 import { RequestAdvancedConfigCommand } from "./smartLockCommands/RequestAdvancedConfigCommand";
+import { RequestAuthorizationsCommand } from "./smartLockCommands/RequestAuthorizationsCommand";
 
 export class SmartLock extends Events.EventEmitter {
     static readonly NUKI_SERVICE_UUID = "a92ee200550111e4916c0800200c9a66";
@@ -314,14 +315,12 @@ export class SmartLock extends Events.EventEmitter {
 
             this.validateCharacteristics();
 
-            let challenge: Buffer | undefined;
-
             if (command.requiresChallenge) {
                 this.currentCommand = new ChallengeCommand();
                 await this.writeEncryptedData(this.currentCommand.requestData(this.config!));
                 try {
                     let response: SmartLockResponse = await this.waitForResponse();
-                    challenge = response.data.challenge;
+                    command.challenge = response.data.challenge;
                 } catch (error) {
                     this.state = GeneralState.IDLE;
                     reject(error);
@@ -331,7 +330,7 @@ export class SmartLock extends Events.EventEmitter {
 
             this.currentCommand = command;
             
-            await this.writeEncryptedData(this.currentCommand.requestData(this.config!), challenge);
+            await this.writeEncryptedData(this.currentCommand.requestData(this.config!));
 
             let response: SmartLockResponse;
 
@@ -437,7 +436,7 @@ export class SmartLock extends Events.EventEmitter {
         return Buffer.concat([buffer, data]);
     }
 
-    private async writeEncryptedData(data: Buffer, challenge?: Buffer): Promise<void> {
+    private async writeEncryptedData(data: Buffer): Promise<void> {
         if (!this.config || !this.paired) {
             throw new Error("Encrypted commands can only be sent for already paired smart locks.");
         }
@@ -448,10 +447,6 @@ export class SmartLock extends Events.EventEmitter {
         authIdBuf.writeUInt32LE(this.config.authorizationId, 0);
 
         data = Buffer.concat([authIdBuf, data]);
-
-        if (challenge) {
-            data = Buffer.concat([data, challenge]);
-        }
 
         let dataCrc: Buffer = SmartLock.appendCRC(data);
 

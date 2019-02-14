@@ -20,6 +20,8 @@ export class LockActionCommand extends SmartLockCommand {
         payload.writeUInt32LE(config.appId, 1);
         payload.writeUInt8(0, 5);
 
+        payload = Buffer.concat([payload, this.challenge]);
+
         return SmartLock.prepareCommand(Command.LOCK_ACTION, payload);
     }
 

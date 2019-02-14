@@ -2,6 +2,7 @@ import { SmartLockResponse } from "../smartLockResponse";
 import { NukiConfig } from "../nukiConfig";
 
 export abstract class SmartLockCommand {
+    private _challenge: Buffer | null = null;
     protected _callback?: (response: SmartLockResponse) => void;
     protected _response: SmartLockResponse;
     protected _complete: boolean = false;
@@ -12,6 +13,17 @@ export abstract class SmartLockCommand {
 
     constructor() {
         this._response = new SmartLockResponse();
+    }
+
+    set challenge(challenge: Buffer) {
+        this._challenge = challenge;
+    }
+
+    get challenge(): Buffer {
+        if (!this._challenge) {
+            throw new Error("Challenge is null.");
+        }
+        return this._challenge;
     }
 
     get complete(): boolean {

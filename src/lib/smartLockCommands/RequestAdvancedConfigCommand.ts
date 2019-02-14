@@ -4,10 +4,10 @@ import { SmartLock } from "../smartLock";
 import { NukiConfig } from "../nukiConfig";
 
 export class RequestAdvancedConfigCommand extends SmartLockCommand {
-    readonly requiresChallenge = true ;
+    readonly requiresChallenge = true;
     
     requestData(config: NukiConfig): Buffer {
-        return SmartLock.prepareCommand(Command.REQUEST_ADVANCED_CONFIG);
+        return SmartLock.prepareCommand(Command.REQUEST_ADVANCED_CONFIG, this.challenge);
     }
 
     handleData(command: number, payload: Buffer): void {
