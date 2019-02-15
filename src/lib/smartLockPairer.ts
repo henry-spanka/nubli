@@ -294,7 +294,7 @@ export class SmartLockPairer extends Events.EventEmitter {
         
         id.writeUInt32LE(this.config.appId, 1);
 
-        let name = new Buffer(32).fill(' ');
+        let name = new Buffer(32).fill(0);
         name.write("Nubli Node.js Library", 0);
 
         return Buffer.concat([id, name]);
