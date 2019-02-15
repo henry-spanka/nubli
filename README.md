@@ -1,23 +1,36 @@
 # Nubli
 
 Nubli is a Node.JS library for Nuki Smart Locks (**Nu**ki **B**luetooth **Li**brary)
+Nubli is very energy efficient when used properly and should't drain more power than a Nuki bridge. It uses the same protocol the App and Bridge uses and therefore communicates securely with the Smart Lock.
 
 [![NPM](https://nodei.co/npm/nubli.png?compact=true)](https://npmjs.org/package/nubli)
 
 # Features
 * Get Lock State of Nuki Smart Lock (including door sensor)
-* Unlock/Lock Door
+* Unlock/Lock/Unlatch/LockNGo Door
+* Listen for Lock State and Door Sensor changes
+* Get Authorizations
+* Get Configuration
+* Get Advanced Configuration
 
 # Supported devices
-- Nuki Smart Lock v2.0
+- Nuki Smart Lock v2
+- Nuki Smart Lock v1 (not yet 100% compatible - Please open an issue if something doesn't work)
+
+# Requirements
+- Linux-based Server (e.g. Raspberry Pi)
+- Bluetooth 4.x Dongle (Tested with $5 CSR Module)
+
+**Note**: Do not use the built-in Bluetooth in a Raspberry Pi. Due to bad hardware design it will not reliably connect to your Smart Lock and cause unexpected disconnects. I've been there and invested a whole week into fixing it.
 
 # Setup / Installation
-1. `npm install nubli`
-2. See [Examples](examples/) or documentation
+1. `npm install nubli --save`
+2. See [Examples](examples/) or [Usage](#usage)
 3. Star the repository ;)
 
 # Notes
-This library is a work in progress and not yet stable. Use at your own risk. New features will be added as needed.
+* This library is a work in progress and not yet stable. Use at your own risk. New features will be added as needed.
+* You can only run one instance of this library simultaneously with one dongle. If want to integrate this library into multiple applications running at the same time on the same device, either pin the applications to different bluetooth dongles or communicate with a single instance of this library via a webserver/websocket/mqtt instead.
 
 # Usage
 ```typescript
@@ -25,7 +38,7 @@ This library is a work in progress and not yet stable. Use at your own risk. New
 
     nubli.onReadyToScan()
     .then(() => {
-        //nubli.startScanning();
+        nubli.startScanning();
     })
     .catch((err) => {
         console.log(err);
@@ -44,7 +57,9 @@ This library is a work in progress and not yet stable. Use at your own risk. New
     nubli.startActiveScanning(): void;
 ```
 
-**Note**: Scanning requires the bluetooth device to be powered on. This may take a few milliseconds. Make sure to wait for the promise ```nubli.readyToScan()``` to resolve first.
+**Notes**:
+* Scanning requires the bluetooth device to be powered on. This may take a few milliseconds. Make sure to wait for the promise ```nubli.readyToScan()``` to resolve first.
+* Only use active scanning when you are trying to pair a new device. Active Scanning will drain your Smart Lock's battery very quickly. Passive Scanning only listens for advertisements from the Smart Lock and does not request additionaly information from the Smart Lock.
 
 ### Stop Scanning for Nuki devices
 ```typescript
@@ -166,7 +181,7 @@ This library is a work in progress and not yet stable. Use at your own risk. New
     smartlock.on('activityLogChanged', () => void);
 ```
 
-**Note**: The `activityLogChanged` event only works while scanning.
+**Note**: The `activityLogChanged` event only works while scanning because the Smart Lock advertises activity log changes via bluetooth. To get notified when the door opens or closes (Door Sensor) make sure to enable 'Log door sensor status' in the Nuki app.
 
 # Help
 If you have any questions or help please open an issue on the GitHub project page.
