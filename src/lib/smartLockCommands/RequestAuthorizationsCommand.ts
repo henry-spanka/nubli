@@ -131,7 +131,7 @@ export class RequestAuthorizationsCommand extends SmartLockCommand {
                 this._complete = true;
             } else {
                 this._complete = true;
-                this.response.success = false;
+                this._response.success = false;
             }
         }
     }

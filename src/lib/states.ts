@@ -59,7 +59,8 @@ export enum KeyturnerError {
 }
 
 export enum Status {
-    COMPLETE = 0x00
+    COMPLETE = 0x00,
+    ACCEPTED = 0x01
 }
 
 export enum NukiState {

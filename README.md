@@ -90,12 +90,27 @@ This library is a work in progress and not yet stable. Use at your own risk. New
 
 ### Unlock door
 ```typescript
-    smartlock.unlock(): Promise<SmartLockResponse>;
+    smartlock.unlock(updateCallback?: (response: SmartLockResponse) => void): Promise<SmartLockResponse>;
 ```
 
 ### Lock door
 ```typescript
-    smartlock.lock(): Promise<SmartLockResponse>;
+    smartlock.lock(updateCallback?: (response: SmartLockResponse) => void): Promise<SmartLockResponse>;
+```
+
+### Unlatch Door
+```typescript
+    smartlock.unlatch(updateCallback?: (response: SmartLockResponse) => void): Promise<SmartLockResponse>;
+```
+
+### Lock N Go Door
+```typescript
+    smartlock.lockNGo(updateCallback?: (response: SmartLockResponse) => void): Promise<SmartLockResponse>;
+```
+
+### Lock N Go Unlatch Door
+```typescript
+    smartlock.lockNGoUnlatch(updateCallback?: (response: SmartLockResponse) => void): Promise<SmartLockResponse>;
 ```
 
 ### Get Config from Smart Lock

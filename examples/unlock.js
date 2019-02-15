@@ -26,7 +26,9 @@ nubli.on("smartLockDiscovered", async (smartlock) => {
         .then(async () => {
             if (smartlock.paired) {
                 console.log("Good we're paired");
-                let lockState = await smartlock.unlock();
+                let lockState = await smartlock.unlock((response) => {
+                    console.log(response);
+                });
                 console.log(lockState);
                 
                 smartlock.disconnect();

@@ -378,16 +378,34 @@ export class SmartLock extends Events.EventEmitter {
         return await this.executeCommand(new KeyTurnerStatesCommand());
     }
 
-    async unlock(): Promise<SmartLockResponse> {
+    async unlock(updateCallback?: (response: SmartLockResponse) => void): Promise<SmartLockResponse> {
         this.debug("Unlocking");
 
-        return await this.executeCommand(new LockActionCommand(LockAction.UNLOCK));
+        return await this.executeCommand(new LockActionCommand(LockAction.UNLOCK, updateCallback));
     }
 
-    async lock(): Promise<SmartLockResponse> {
+    async lock(updateCallback?: (response: SmartLockResponse) => void): Promise<SmartLockResponse> {
         this.debug("Locking");
 
-        return await this.executeCommand(new LockActionCommand(LockAction.LOCK));
+        return await this.executeCommand(new LockActionCommand(LockAction.LOCK, updateCallback));
+    }
+
+    async unlatch(updateCallback?: (response: SmartLockResponse) => void): Promise<SmartLockResponse> {
+        this.debug("Unlatching");
+
+        return await this.executeCommand(new LockActionCommand(LockAction.UNLATCH, updateCallback));
+    }
+
+    async lockNGo(updateCallback?: (response: SmartLockResponse) => void): Promise<SmartLockResponse> {
+        this.debug("Lock N Go");
+
+        return await this.executeCommand(new LockActionCommand(LockAction.LOCK_N_GO, updateCallback));
+    }
+
+    async lockNGoUnlatch(updateCallback?: (response: SmartLockResponse) => void): Promise<SmartLockResponse> {
+        this.debug("Lock N Go Unlatch");
+
+        return await this.executeCommand(new LockActionCommand(LockAction.LOCK_N_GO_UNLATCH, updateCallback));
     }
 
     async requestAuthorizations(pin: number, offset: number, count: number): Promise<SmartLockResponse> {
