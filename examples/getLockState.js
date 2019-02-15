@@ -28,11 +28,11 @@ nubli.on("smartLockDiscovered", async (smartlock) => {
                 console.log("Good we're paired");
                 let lockState = await smartlock.readLockState();
                 console.log(lockState);
-                
-                smartlock.disconnect();
             } else {
                 console.log("Pair first :(");
-                smartlock.disconnect();
             }
+
+            await smartlock.disconnect();
+            process.exit(0);
         });
 });

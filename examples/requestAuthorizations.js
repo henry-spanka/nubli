@@ -41,10 +41,12 @@ nubli.on("smartLockDiscovered", async (smartlock) => {
                     console.log(error.message);
                 }
                 
-                smartlock.disconnect();
+                await smartlock.disconnect();
+                process.exit(0);
             } else {
                 console.log("Pair first :(");
-                smartlock.disconnect();
+                await smartlock.disconnect();
+                process.exit(1);
             }
         });
 });

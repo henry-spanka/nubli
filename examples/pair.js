@@ -32,11 +32,12 @@ nubli.on("smartLockDiscovered", (smartlock) => {
                     .then(async () => {
                         console.log("successfully paired");
                         await smartlock.saveConfig(nubli.configPath);
-                        smartlock.disconnect();
+                        await smartlock.disconnect();
                     })
                     .catch((error) => {
                         console.log("Pairing unsuccessful - error message: " + error);
                     });
-                }
+            }
+            process.exit(0);
         });
 });
