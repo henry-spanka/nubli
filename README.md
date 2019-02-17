@@ -29,7 +29,6 @@ Nubli is very energy efficient when used properly and should't drain more power 
 3. Star the repository ;)
 
 # Notes
-* This library is a work in progress and not yet stable. Use at your own risk. New features will be added as needed.
 * You can only run one instance of this library simultaneously with one dongle. If want to integrate this library into multiple applications running at the same time on the same device, either pin the applications to different bluetooth dongles or communicate with a single instance of this library via a webserver/websocket/mqtt instead.
 
 # Usage
