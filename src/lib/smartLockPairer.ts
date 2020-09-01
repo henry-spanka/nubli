@@ -9,12 +9,8 @@ export class SmartLockPairer extends Events.EventEmitter {
     private nukiPairingCharacteristic: import("noble").Characteristic;
     private state: PairingState = PairingState.IDLE;
     private config: NukiConfig;
-    private partialPayload: Buffer | null = null;
     private nonceABF: Uint8Array | null = null;
     private asBridge: boolean;
-
-    // The first packet should not be verified as it does not contain any CRC and is only partial.
-    private verifyCRC: boolean = false;
 
     constructor(nukiPairingCharacteristic: import("noble").Characteristic, nukiConfig: NukiConfig, asBridge: boolean) {
         super();
@@ -71,10 +67,6 @@ export class SmartLockPairer extends Events.EventEmitter {
     }
 
     private validateCRC(data: Buffer): boolean {
-        if (this.partialPayload) {
-            data = Buffer.concat([this.partialPayload, data]);
-        }
-
         if (!SmartLock.verifyCRC(data)) {
             let errorMessage = ErrorHandler.errorToMessage(GeneralError.BAD_CRC);
 
@@ -111,7 +103,7 @@ export class SmartLockPairer extends Events.EventEmitter {
 
     private pairingDataReceived(payload: Buffer, isNotification: boolean): void {
         // Only check CRC if we should.
-        if (this.verifyCRC && !this.validateCRC(payload)) return;
+        if (!this.validateCRC(payload)) return;
 
         let data: Buffer;
 
@@ -121,24 +113,14 @@ export class SmartLockPairer extends Events.EventEmitter {
                 if (this.getCommandFromPayload(payload) != Command.PUBLIC_KEY) {
                     this.printErrorMessage("Unexpected data received during REQ_PUB_KEY", payload);
                 } else {
-                    this.partialPayload = payload;
-                    this.verifyCRC = true;
-                    this.state = PairingState.REQ_PUB_KEY_FIN;
+                  this.config.credentials.slPublicKey = this.getDataFromPayload(payload);
+
+                  data = SmartLock.prepareCommand(Command.PUBLIC_KEY, new Buffer(this.config.credentials.publicKey));
+
+                  this.writeData(data);
+
+                  this.state = PairingState.REQ_CHALLENGE;
                 }
-                break;
-
-            // Smartlock has sent it's public key. We send ours now.
-            case PairingState.REQ_PUB_KEY_FIN:
-                this.config.credentials.slPublicKey = this.getDataFromPayload(Buffer.concat([this.partialPayload!, payload]));
-                this.partialPayload = null;
-
-                data = SmartLock.prepareCommand(Command.PUBLIC_KEY, new Buffer(this.config.credentials.publicKey));
-
-                this.writeData(data);
-
-                this.verifyCRC = false;
-                this.state = PairingState.REQ_CHALLENGE;
-
                 break;
 
             // SmartLock has sent the first part of the challenge.
@@ -146,124 +128,77 @@ export class SmartLockPairer extends Events.EventEmitter {
                 if (this.getCommandFromPayload(payload) != Command.CHALLENGE) {
                     this.printErrorMessage("Unexpected data received during REQ_CHALLENGE", payload);
                 } else {
-                    this.partialPayload = payload;
-                    this.verifyCRC = true;
-                    this.state = PairingState.REQ_CHALLENGE_FIN;
+                  let nonceK: Buffer = this.getDataFromPayload(payload);
+
+                  let r: Buffer = Buffer.concat([this.config.credentials.publicKey, this.config.credentials.slPublicKey, nonceK]);
+
+                  let authenticator: Buffer = crypto.createHmac('SHA256', this.config.credentials.sharedSecret!).update(r).digest();
+
+                  data = SmartLock.prepareCommand(Command.AUTH_AUTHENTICATOR, authenticator);
+
+                  this.writeData(data);
+
+                  this.state = PairingState.REQ_CHALLENGE_AUTH;
+
                 }
                 break;
 
-            // Smartlock has sent the challenge. We calculate the authenticator and send it.
-            case PairingState.REQ_CHALLENGE_FIN:
-                let nonceK: Buffer = this.getDataFromPayload(Buffer.concat([this.partialPayload!, payload]));
-                this.partialPayload = null;
-
-                let r: Buffer = Buffer.concat([this.config.credentials.publicKey, this.config.credentials.slPublicKey, nonceK]);
-
-                let authenticator: Buffer = crypto.createHmac('SHA256', this.config.credentials.sharedSecret!).update(r).digest();
-
-                data = SmartLock.prepareCommand(Command.AUTH_AUTHENTICATOR, authenticator);
-
-                this.writeData(data);
-
-                this.verifyCRC = false;
-                this.state = PairingState.REQ_CHALLENGE_AUTH;
-
-                break;
-            
             // Smartlock has sent the first part of the second challenge.
             case PairingState.REQ_CHALLENGE_AUTH:
                 if (this.getCommandFromPayload(payload) != Command.CHALLENGE) {
                     this.printErrorMessage("Unexpected data received DURING REQ_CHALLENGE_AUTH", payload);
                 } else {
-                    this.partialPayload = payload;
-                    this.verifyCRC = true;
-                    this.state = PairingState.REQ_CHALLENGE_AUTH_FIN;
+                  let nonceK2: Buffer = this.getDataFromPayload(payload);
+
+                  let authData: Buffer = this.generateAuthorizationData();
+
+                  this.nonceABF = SmartLock.generateNonce(32);
+
+                  let r2: Buffer = Buffer.concat([authData, this.nonceABF, nonceK2]);
+
+                  let authenticator2: Buffer = crypto.createHmac('SHA256', this.config.credentials.sharedSecret!).update(r2).digest();
+
+                  data = Buffer.concat([authenticator2, authData, this.nonceABF]);
+
+                  data = SmartLock.prepareCommand(Command.AUTH_DATA, data);
+
+                  this.writeData(data);
+                  
+                  this.state = PairingState.REQ_AUTH_ID;
                 }
-                break;
-
-            // Smartlock has sent the challenge. We calculate the authorization data and send it.
-            case PairingState.REQ_CHALLENGE_AUTH_FIN:
-                let nonceK2: Buffer = this.getDataFromPayload(Buffer.concat([this.partialPayload!, payload]));
-                this.partialPayload = null;
-
-                let authData: Buffer = this.generateAuthorizationData();
-
-                this.nonceABF = SmartLock.generateNonce(32);
-
-                let r2: Buffer = Buffer.concat([authData, this.nonceABF, nonceK2]);
-
-                let authenticator2: Buffer = crypto.createHmac('SHA256', this.config.credentials.sharedSecret!).update(r2).digest();
-
-                data = Buffer.concat([authenticator2, authData, this.nonceABF]);
-
-                data = SmartLock.prepareCommand(Command.AUTH_DATA, data);
-
-                this.writeData(data);
-                
-                this.verifyCRC = false;
-                this.state = PairingState.REQ_AUTH_ID_A;
-
                 break;
 
             //Smartlock has sent the first part of the authorization id
-            case PairingState.REQ_AUTH_ID_A:
+            case PairingState.REQ_AUTH_ID:
                 if (this.getCommandFromPayload(payload) != Command.AUTH_ID) {
                     this.printErrorMessage("Unexpected data received during REQ_AUTH_ID_A", payload);
                 } else {
-                    this.partialPayload = payload;
-                    this.state = PairingState.REQ_AUTH_ID_B;
+                  let auth: Buffer = this.getDataFromPayload(payload);
+
+                  let authenticator3: Buffer = auth.slice(0, 32);
+                  let authIdBuf: Buffer = auth.slice(32, 36);
+                  this.config.authorizationId = authIdBuf.readUInt32LE(0);
+                  this.config.slUUID = auth.slice(36, 52);
+                  let nonceK3: Buffer = auth.slice(52, 84);
+
+                  let r3: Buffer = Buffer.concat([authIdBuf, this.config.slUUID, nonceK3, this.nonceABF!]);
+
+                  let cr = crypto.createHmac('SHA256', this.config.credentials.sharedSecret!).update(r3).digest();
+
+                  if (Buffer.compare(authenticator3, cr) !== 0) {
+                      this.emit("pairingFailed", "The authenticator could not be verified.");
+                  } else {
+                      let r4 = Buffer.concat([authIdBuf, nonceK3]);
+                      let authenticator4 = crypto.createHmac('SHA256', this.config.credentials.sharedSecret!).update(r4).digest();
+                      data = SmartLock.prepareCommand(Command.AUTH_ID_CONFIRM, Buffer.concat([authenticator4, authIdBuf]));
+
+                      this.writeData(data);
+
+                      this.state = PairingState.REQ_AUTH_ID_CONFIRM;
+                  }
                 }
                 break;
 
-            //Smartlock has sent the second part of the authorization id
-            case PairingState.REQ_AUTH_ID_B:
-                this.partialPayload = Buffer.concat([this.partialPayload!, payload]);
-                this.state = PairingState.REQ_AUTH_ID_C;
-
-                break;
-
-            //Smartlock has sent the third part of the authorization id
-            case PairingState.REQ_AUTH_ID_C:
-                this.partialPayload = Buffer.concat([this.partialPayload!, payload]);
-                this.state = PairingState.REQ_AUTH_ID_D;
-
-                break;
-
-            //Smartlock has sent the fourth part of the authorization id
-            case PairingState.REQ_AUTH_ID_D:
-                this.partialPayload = Buffer.concat([this.partialPayload!, payload]);
-                this.verifyCRC = true;
-                this.state = PairingState.REQ_AUTH_ID_FIN;
-
-                break;
-            //Smartlock has sent the fifth part of the authorization id
-            case PairingState.REQ_AUTH_ID_FIN:
-                let auth: Buffer = this.getDataFromPayload(Buffer.concat([this.partialPayload!, payload]));
-                this.partialPayload = null;
-
-                let authenticator3: Buffer = auth.slice(0, 32);
-                let authIdBuf: Buffer = auth.slice(32, 36);
-                this.config.authorizationId = authIdBuf.readUInt32LE(0);
-                this.config.slUUID = auth.slice(36, 52);
-                let nonceK3: Buffer = auth.slice(52, 84);
-
-                let r3: Buffer = Buffer.concat([authIdBuf, this.config.slUUID, nonceK3, this.nonceABF!]);
-
-                let cr = crypto.createHmac('SHA256', this.config.credentials.sharedSecret!).update(r3).digest();
-
-                if (Buffer.compare(authenticator3, cr) !== 0) {
-                    this.emit("pairingFailed", "The authenticator could not be verified.");
-                } else {
-                    let r4 = Buffer.concat([authIdBuf, nonceK3]);
-                    let authenticator4 = crypto.createHmac('SHA256', this.config.credentials.sharedSecret!).update(r4).digest();
-                    data = SmartLock.prepareCommand(Command.AUTH_ID_CONFIRM, Buffer.concat([authenticator4, authIdBuf]));
-
-                    this.writeData(data);
-
-                    this.state = PairingState.REQ_AUTH_ID_CONFIRM;
-                }
-
-                break;
             case PairingState.REQ_AUTH_ID_CONFIRM:
                 if (this.getCommandFromPayload(payload) == Command.STATUS && this.getDataFromPayload(payload).readUInt8(0) == Status.COMPLETE) {
                     this.state = PairingState.PAIRED;

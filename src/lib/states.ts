@@ -7,16 +7,9 @@ export enum PairingState {
     IDLE,
     FAILED,
     REQ_PUB_KEY,
-    REQ_PUB_KEY_FIN,
     REQ_CHALLENGE,
-    REQ_CHALLENGE_FIN,
     REQ_CHALLENGE_AUTH,
-    REQ_CHALLENGE_AUTH_FIN,
-    REQ_AUTH_ID_A,
-    REQ_AUTH_ID_B,
-    REQ_AUTH_ID_C,
-    REQ_AUTH_ID_D,
-    REQ_AUTH_ID_FIN,
+    REQ_AUTH_ID,
     REQ_AUTH_ID_CONFIRM,
     PAIRED
 }
