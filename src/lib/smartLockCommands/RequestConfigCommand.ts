@@ -52,8 +52,11 @@ export class RequestConfigCommand extends SmartLockCommand {
         let hardwareMinorVersion: number = payload.readUInt8(70);
         this._response.data.hardwareRevision = hardwareMajorVersion + "." + hardwareMinorVersion;
 
-        this._response.data.homeKitStatus = payload.readUInt8(71);
-        this._response.data.timeZoneId = payload.readUInt16LE(72);
+        //Additional fields added in API V2 only available on Nuki V2
+        if(majorVersion > 1) {
+          this._response.data.homeKitStatus = payload.readUInt8(71);
+          this._response.data.timeZoneId = payload.readUInt16LE(72);
+        }
 
         this._complete = true;
     }
